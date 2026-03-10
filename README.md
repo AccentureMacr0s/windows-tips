@@ -25,6 +25,9 @@ windows-tips/
 │   │   ├── performance-handler.ps1  # F9 in-game snapshot
 │   │   └── quality-handler.ps1      # F10 network quality check
 │   └── logs/                   # Auto-created; holds performance.log & analysis.log
+├── electromagnetic-device/     # Electromagnetic aircraft design concept
+│   ├── README.md               # Design description, components, and operating principles
+│   └── circuit.asc             # LTspice netlist for electromagnetic simulation
 ├── remove-startup-apps.ps1     # Remove startup entries interactively
 ├── startup-cleaner-hint.ps1    # Quick one-shot startup cleaner
 └── validator.ps1               # Disk-usage report for a user profile
@@ -401,3 +404,25 @@ Downloads: 2816 MB (2.75 GB)
 | No GPU temperature shown | Install OpenHardwareMonitor (optional) |
 | Registry backup not created | Run launcher / optimizer as Administrator |
 | HKLM entries not removed | Run startup scripts as Administrator |
+
+---
+
+## Electromagnetic Aircraft Design Concept
+
+The `electromagnetic-device/` folder contains a conceptual design for an aircraft that generates lift by accelerating ionised particles downward using rotating magnets and a parabolic reflector.
+
+### Key Components
+
+| Element | Role |
+|---------|------|
+| Rotating cylindrical magnets | Counter-rotating to generate a vortex electromagnetic field |
+| Air-ionisation system | High-frequency generator + electrodes create a plasma stream |
+| Parabolic reflector mirror | Focuses the charged-particle beam downward |
+| Control coils / superconductors | Manage field resonance and attitude stabilisation |
+| Cooling system | Prevents overheating of mirror and magnets |
+
+### Simulation
+
+The LTspice netlist (`electromagnetic-device/circuit.asc`) models the magnet coil drive circuit (`V1 = 24 V`, `L1`, `L2`, `R1`, `C1`, `D1`) and the high-voltage ioniser supply (`V2 = 5 kV`, `R2`, `C2`, `D2`).  Open it in [LTspice](https://www.analog.com/en/resources/design-tools-and-calculators/ltspice-simulator.html) and run the included `.op` and `.tran` analyses to inspect quiescent currents and coil flyback behaviour.
+
+See [`electromagnetic-device/README.md`](electromagnetic-device/README.md) for the full design description.
