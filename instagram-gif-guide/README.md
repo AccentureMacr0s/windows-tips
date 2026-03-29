@@ -99,11 +99,22 @@ Once approved, all GIFs you upload to your channel will appear in the Instagram 
 
 ---
 
+## Additional Guides
+
+| File | Description |
+|------|-------------|
+| [`phone-browser-guide.md`](phone-browser-guide.md) | Complete workflow from a phone browser — no desktop or Instagram app needed |
+| [`update-existing-gif.md`](update-existing-gif.md) | Edit tags, reassign, or bulk-retag existing Giphy GIFs |
+| [`validate-gif.ps1`](validate-gif.ps1) | PowerShell script — validates a tag or GIF ID is live and searchable via the Giphy API |
+
+---
+
 ## Quick Reference
 
 | Tool            | Purpose                        | Link                                      |
 |-----------------|--------------------------------|-------------------------------------------|
 | Giphy           | Host & distribute GIFs         | [giphy.com](https://giphy.com)            |
+| Giphy Developers| API keys & documentation       | [developers.giphy.com](https://developers.giphy.com) |
 | Ezgif           | Convert video → GIF            | [ezgif.com](https://ezgif.com)            |
 | Runway ML       | AI video generation            | [runwayml.com](https://runwayml.com)      |
 | Pika Labs       | AI video generation            | [pika.art](https://pika.art)              |

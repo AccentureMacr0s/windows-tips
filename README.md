@@ -29,7 +29,10 @@ windows-tips/
 │   ├── README.md               # Design description, components, and operating principles
 │   └── circuit.asc             # LTspice netlist for electromagnetic simulation
 ├── instagram-gif-guide/        # How-to: add a custom AI GIF to Instagram via Giphy
-│   └── README.md               # Step-by-step guide (create → upload → use in Stories)
+│   ├── README.md               # Step-by-step guide (create → upload → use in Stories)
+│   ├── phone-browser-guide.md  # Full workflow from a phone browser (no app needed)
+│   ├── update-existing-gif.md  # Edit/reassign tags on existing Giphy GIFs
+│   └── validate-gif.ps1        # Giphy API validator: checks tag/GIF ID is searchable
 ├── remove-startup-apps.ps1     # Remove startup entries interactively
 ├── startup-cleaner-hint.ps1    # Quick one-shot startup cleaner
 └── validator.ps1               # Disk-usage report for a user profile
@@ -443,5 +446,20 @@ The `instagram-gif-guide/` folder contains a step-by-step guide for creating a c
 | 2 | Upload the GIF to [giphy.com](https://giphy.com) with descriptive tags |
 | 3 | Apply for a verified Giphy artist channel so the GIF is searchable in Instagram |
 | 4 | Find and use your GIF via the Instagram **GIF sticker** in Stories or DMs |
+
+### Files in this guide
+
+| File | Description |
+|------|-------------|
+| [`README.md`](instagram-gif-guide/README.md) | Main step-by-step guide |
+| [`phone-browser-guide.md`](instagram-gif-guide/phone-browser-guide.md) | Workflow from a phone browser — no desktop or app needed |
+| [`update-existing-gif.md`](instagram-gif-guide/update-existing-gif.md) | Edit or reassign tags on existing Giphy GIFs |
+| [`validate-gif.ps1`](instagram-gif-guide/validate-gif.ps1) | PowerShell: validate a tag or GIF ID is live via Giphy API |
+
+**Validate a tag from PowerShell:**
+```powershell
+.\instagram-gif-guide\validate-gif.ps1 -ApiKey "YOUR_GIPHY_KEY" -Tag "юрий клинский"
+.\instagram-gif-guide\validate-gif.ps1 -ApiKey "YOUR_GIPHY_KEY" -GifId "abc123xyz"
+```
 
 See [`instagram-gif-guide/README.md`](instagram-gif-guide/README.md) for the full walkthrough, recommended GIF specs, troubleshooting tips, and a tool reference table.
