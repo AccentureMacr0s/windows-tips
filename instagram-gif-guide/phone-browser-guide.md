@@ -2,6 +2,8 @@
 
 This guide covers the complete workflow entirely from a mobile browser — no desktop, no Instagram app, and no Giphy app needed.
 
+A dedicated **iPhone (Safari)** walkthrough is included in each part alongside the generic steps.
+
 ---
 
 ## Requirements
@@ -9,6 +11,19 @@ This guide covers the complete workflow entirely from a mobile browser — no de
 - A smartphone with a modern browser (Chrome, Firefox, or Safari)
 - A [Giphy](https://giphy.com) account
 - An [Instagram](https://www.instagram.com) account
+
+---
+
+## iPhone Quick-Reference (Safari)
+
+| Action                      | How to do it on iPhone Safari                                                  |
+|-----------------------------|--------------------------------------------------------------------------------|
+| Request Desktop Site        | Tap **AA** in the address bar → **Request Desktop Website**                    |
+| Download a file             | Tap the download link → tap **Download** in the pop-up → find it in **Files → Downloads** |
+| Save a GIF to Photos        | Long-press the GIF image → **Save to Photos**                                  |
+| Upload a file from Files    | Tap **Choose File** → tap **Browse** → navigate to **Downloads**               |
+| Copy a URL                  | Long-press the address bar → **Copy**                                          |
+| Share a page                | Tap the **Share** button (box with arrow) → **Copy Link**                      |
 
 ---
 
@@ -25,10 +40,25 @@ This guide covers the complete workflow entirely from a mobile browser — no de
 4. Tap **Convert to GIF**.
 5. Scroll down to the result and tap **Save** (or long-press the GIF → **Download image**).
 
+#### iPhone (Safari) — Step 5 in detail
+
+| Step | Action |
+|------|--------|
+| 5a | After the GIF renders on Ezgif, scroll down to the **Output GIF** preview. |
+| 5b | Tap and hold the GIF image. A context menu appears. |
+| 5c | Tap **Save to Photos** to save it to your Camera Roll. |
+| 5d | Alternatively, tap **Download Linked File** (if shown) — the GIF saves to **Files → Downloads**. |
+
+> **Tip (iPhone):** If the download option is missing, tap **AA** in the Safari address bar → **Request Desktop Website** and reload the page.
+
+---
+
 ### Option B: Record Directly and Convert
 
 1. Record a short video (2–6 sec) with your phone camera.
 2. Follow Option A to convert it.
+
+---
 
 ### Option C: Use an AI Tool from the Browser
 
@@ -57,6 +87,13 @@ This guide covers the complete workflow entirely from a mobile browser — no de
 7. Tap **Upload to GIPHY**.
 8. Copy the GIF URL from the share page — you will need it for validation (see `validate-gif.ps1`).
 
+#### iPhone (Safari) — Steps 2 & 5 in detail
+
+| Step | Action |
+|------|--------|
+| 2 | Open Safari → go to `giphy.com` → tap **AA** in address bar → tap **Request Desktop Website**. |
+| 5 | Tap **Choose File** in the Giphy upload form → tap **Photo Library** to pick from Camera Roll, or tap **Browse** → **Downloads** to pick from Files. |
+
 ---
 
 ## Part 3 — Search for Your GIF in Instagram from a Phone Browser
@@ -68,6 +105,13 @@ Instagram's GIF sticker search is only available inside the app. However, you ca
 3. Confirm your GIF appears in results.
 
 Once confirmed, it will also appear in Instagram's GIF sticker search within 24–48 hours of your Giphy channel being verified.
+
+#### iPhone (Safari) — Searching with Cyrillic Tags
+
+1. Tap the Giphy search bar.
+2. Switch the iPhone keyboard to **Russian** (tap the globe 🌐 key).
+3. Type your Cyrillic tag (e.g. `юрий клинский`).
+4. Tap **Search** — your GIF should appear in results.
 
 ---
 
@@ -81,6 +125,16 @@ Instagram Stories and Reels **require the app** for the GIF sticker. However, yo
 2. Open a conversation.
 3. Copy your GIF's direct Giphy URL (e.g. `https://media.giphy.com/media/XXXX/giphy.gif`).
 4. Paste the URL into the message and send — it will embed as a GIF preview in most browsers.
+
+#### iPhone (Safari) — DM workaround detail
+
+| Step | Action |
+|------|--------|
+| 1 | Open Safari → go to `instagram.com` → tap **AA** → **Request Desktop Website**. |
+| 3 | Go to your GIF on Giphy → tap the **Share** icon → tap **Copy Link**. |
+| 4 | Switch back to Instagram DM tab → tap the message box → **Paste** → send. |
+
+---
 
 ### Share as a Post
 
@@ -97,3 +151,6 @@ Instagram Stories and Reels **require the app** for the GIF sticker. However, yo
 | GIF file too large to upload        | Use Ezgif **Optimize** tool to reduce file size below 15 MB |
 | Can't find GIF sticker in Instagram | GIF stickers require the Instagram app; browser DM workaround available (see Part 4) |
 | Giphy account requires email verify | Check spam folder; use a simple email without special characters |
+| iPhone: no Download option on Ezgif | Tap **AA** → **Request Desktop Website**, then long-press the GIF → **Save to Photos** |
+| iPhone: file not visible in upload  | Tap **Choose File** → **Browse** → swipe to **Downloads** in the Files sidebar |
+
