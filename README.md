@@ -8,6 +8,17 @@ A collection of Windows optimization scripts and a full CS2 performance toolkit 
 
 ```
 windows-tips/
+├── .github/
+│   └── workflows/
+│       └── giphy-pipeline.yml  # Automated GIF creation & GIPHY upload pipeline
+├── instagram-gif-guide/        # Guide + automated pipeline for GIPHY/Instagram GIFs
+│   └── README.md               # Full guide: generate, tag, upload, use in Instagram
+├── scripts/                    # Pipeline automation scripts
+│   ├── register_account.rb     # Validate GIPHY API key; output credentials
+│   ├── generate_gif.py         # Convert video → iOS-optimised GIF (FFmpeg)
+│   ├── add_tags.py             # Build GIPHY tag list with Cyrillic support
+│   ├── upload_to_giphy.rb      # Upload GIF via GIPHY Upload API
+│   └── Gemfile                 # Ruby gem dependencies (multipart-post)
 ├── cs2-config.cfg              # Standalone CS2 config (copy to CS2 cfg/ folder)
 ├── cs2-optimizer/              # Full CS2 optimizer suite
 │   ├── bin/
@@ -32,6 +43,39 @@ windows-tips/
 ├── startup-cleaner-hint.ps1    # Quick one-shot startup cleaner
 └── validator.ps1               # Disk-usage report for a user profile
 ```
+
+---
+
+## Instagram GIF Pipeline
+
+The `instagram-gif-guide/` directory and `scripts/` folder contain a fully
+automated pipeline for creating iOS-optimised GIFs from video files and
+uploading them to GIPHY for use in Instagram Stories and DMs.
+
+### Pipeline Files
+
+| File | Purpose |
+|------|---------|
+| [`instagram-gif-guide/README.md`](instagram-gif-guide/README.md) | Full guide: generate → tag → upload → use in Instagram |
+| [`scripts/register_account.rb`](scripts/register_account.rb) | Validate GIPHY API key; surface credentials to pipeline |
+| [`scripts/generate_gif.py`](scripts/generate_gif.py) | Convert video → iOS GIF via FFmpeg (12 fps, 480 px, ≤ 15 MB) |
+| [`scripts/add_tags.py`](scripts/add_tags.py) | Build GIPHY tag list; auto-expand Cyrillic with Latin transliteration |
+| [`scripts/upload_to_giphy.rb`](scripts/upload_to_giphy.rb) | Upload GIF to GIPHY via Upload API |
+| [`.github/workflows/giphy-pipeline.yml`](.github/workflows/giphy-pipeline.yml) | Four-job GitHub Actions pipeline |
+
+### Quick Start
+
+1. Add your GIPHY API key as a GitHub Actions secret named `GIPHY_API_KEY`.
+2. Push a video file under `videos/`, or trigger the workflow manually from the
+   **Actions** tab.
+3. The pipeline runs four jobs automatically:
+   ```
+   register → create-gif → tag-gif → upload
+   ```
+4. The uploaded GIF URL is printed at the end of the `upload` job.
+
+See [`instagram-gif-guide/README.md`](instagram-gif-guide/README.md) for
+detailed documentation, security guidelines, and troubleshooting.
 
 ---
 
