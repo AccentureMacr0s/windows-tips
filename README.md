@@ -28,6 +28,11 @@ windows-tips/
 ├── electromagnetic-device/     # Electromagnetic aircraft design concept
 │   ├── README.md               # Design description, components, and operating principles
 │   └── circuit.asc             # LTspice netlist for electromagnetic simulation
+├── instagram-gif-guide/        # How-to: add a custom AI GIF to Instagram via Giphy
+│   ├── README.md               # Step-by-step guide (create → upload → use in Stories)
+│   ├── phone-browser-guide.md  # Full workflow from a phone browser (no app needed)
+│   ├── update-existing-gif.md  # Edit/reassign tags on existing Giphy GIFs
+│   └── validate-gif.ps1        # Giphy API validator: checks tag/GIF ID is searchable
 ├── remove-startup-apps.ps1     # Remove startup entries interactively
 ├── startup-cleaner-hint.ps1    # Quick one-shot startup cleaner
 └── validator.ps1               # Disk-usage report for a user profile
@@ -426,3 +431,35 @@ The `electromagnetic-device/` folder contains a conceptual design for an aircraf
 The LTspice netlist (`electromagnetic-device/circuit.asc`) models the magnet coil drive circuit (`V1 = 24 V`, `L1`, `L2`, `R1`, `C1`, `D1`) and the high-voltage ioniser supply (`V2 = 5 kV`, `R2`, `C2`, `D2`).  Open it in [LTspice](https://www.analog.com/en/resources/design-tools-and-calculators/ltspice-simulator.html) and run the included `.op` and `.tran` analyses to inspect quiescent currents and coil flyback behaviour.
 
 See [`electromagnetic-device/README.md`](electromagnetic-device/README.md) for the full design description.
+
+---
+
+## How To: Add a GIF to Instagram Using AI (Giphy)
+
+The `instagram-gif-guide/` folder contains a step-by-step guide for creating a custom GIF with AI tools, uploading it to Giphy, and making it searchable inside Instagram Stories and DMs.
+
+### Quick Overview
+
+| Step | What to do |
+|------|------------|
+| 1 | Generate a short clip with an AI tool (Runway ML, Pika Labs, etc.) and convert to GIF |
+| 2 | Upload the GIF to [giphy.com](https://giphy.com) with descriptive tags |
+| 3 | Apply for a verified Giphy artist channel so the GIF is searchable in Instagram |
+| 4 | Find and use your GIF via the Instagram **GIF sticker** in Stories or DMs |
+
+### Files in this guide
+
+| File | Description |
+|------|-------------|
+| [`README.md`](instagram-gif-guide/README.md) | Main step-by-step guide |
+| [`phone-browser-guide.md`](instagram-gif-guide/phone-browser-guide.md) | Workflow from a phone browser — no desktop or app needed |
+| [`update-existing-gif.md`](instagram-gif-guide/update-existing-gif.md) | Edit or reassign tags on existing Giphy GIFs |
+| [`validate-gif.ps1`](instagram-gif-guide/validate-gif.ps1) | PowerShell: validate a tag or GIF ID is live via Giphy API |
+
+**Validate a tag from PowerShell:**
+```powershell
+.\instagram-gif-guide\validate-gif.ps1 -ApiKey "YOUR_GIPHY_KEY" -Tag "юрий клинский"
+.\instagram-gif-guide\validate-gif.ps1 -ApiKey "YOUR_GIPHY_KEY" -GifId "abc123xyz"
+```
+
+See [`instagram-gif-guide/README.md`](instagram-gif-guide/README.md) for the full walkthrough, recommended GIF specs, troubleshooting tips, and a tool reference table.
