@@ -1,0 +1,240 @@
+# giphy-pipeline.yml
+# Automated pipeline: register GIPHY account → create GIF → add tags → upload
+#
+# Trigger:
+#   workflow_dispatch – run manually from the Actions tab with custom inputs.
+#   push to 'main' or 'master' – auto-run when a video file is pushed under
+#   the videos/ directory.
+#
+# Required secrets (set in Settings → Secrets and variables → Actions):
+#   GIPHY_API_KEY   – GIPHY Developer API key with upload scope
+#                     (https://developers.giphy.com/)
+#
+# Optional repository variables (Settings → Secrets and variables → Variables):
+#   GIPHY_APP_NAME  – display name used when registering the channel
+
+name: GIPHY Upload Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      video_path:
+        description: 'Path to the input video file (relative to repo root)'
+        required: true
+        default: 'videos/input.mp4'
+      gif_tags:
+        description: 'Comma-separated tags (Latin or Cyrillic, max 10)'
+        required: false
+        default: 'gif,animation,ios'
+      gif_fps:
+        description: 'Frames per second for the output GIF'
+        required: false
+        default: '12'
+      gif_width:
+        description: 'Output width in pixels (height auto-scaled)'
+        required: false
+        default: '480'
+      gif_title:
+        description: 'Human-readable title for the GIF on GIPHY'
+        required: false
+        default: ''
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'videos/**'
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1: Validate GIPHY credentials and surface them as step outputs
+  # ---------------------------------------------------------------------------
+  register:
+    name: Register / Validate GIPHY Account
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      giphy_api_key:  ${{ steps.register.outputs.giphy_api_key }}
+      giphy_username: ${{ steps.register.outputs.giphy_username }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: false
+
+      - name: Install Ruby dependencies
+        working-directory: scripts
+        run: bundle install --jobs 4 --retry 3
+
+      - name: Register / validate GIPHY account
+        id: register
+        working-directory: scripts
+        env:
+          GIPHY_API_KEY:  ${{ secrets.GIPHY_API_KEY }}
+          GIPHY_APP_NAME: ${{ vars.GIPHY_APP_NAME }}
+        # $GITHUB_OUTPUT is set automatically by the Actions runner.
+        # The script writes "giphy_api_key=..." and "giphy_username=..."
+        # to that file; both values are masked in logs.
+        run: ruby register_account.rb
+
+  # ---------------------------------------------------------------------------
+  # Job 2: Convert the input video to an iOS-optimised GIF
+  # ---------------------------------------------------------------------------
+  create-gif:
+    name: Create iOS-Optimised GIF
+    runs-on: ubuntu-latest
+    needs: register
+    permissions:
+      contents: read
+    outputs:
+      gif_path: ${{ steps.generate.outputs.gif_path }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends ffmpeg
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Resolve input video path
+        id: resolve
+        run: |
+          VIDEO="${{ github.event.inputs.video_path || 'videos/input.mp4' }}"
+          echo "video_path=$VIDEO" >> "$GITHUB_OUTPUT"
+
+      - name: Generate GIF
+        id: generate
+        env:
+          INPUT_VIDEO: ${{ steps.resolve.outputs.video_path }}
+          GIF_FPS:     ${{ github.event.inputs.gif_fps || '12' }}
+          GIF_WIDTH:   ${{ github.event.inputs.gif_width || '480' }}
+        run: |
+          python scripts/generate_gif.py "$INPUT_VIDEO" \
+            --fps   "$GIF_FPS" \
+            --width "$GIF_WIDTH" \
+            --output output_ios.gif
+          echo "gif_path=output_ios.gif" >> "$GITHUB_OUTPUT"
+
+      - name: Upload GIF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-gif
+          path: output_ios.gif
+          retention-days: 1
+
+  # ---------------------------------------------------------------------------
+  # Job 3: Build and validate the tag list (with Cyrillic expansion)
+  # ---------------------------------------------------------------------------
+  tag-gif:
+    name: Add Metadata and Tags
+    runs-on: ubuntu-latest
+    needs: create-gif
+    permissions:
+      contents: read
+    outputs:
+      gif_tags: ${{ steps.tags.outputs.gif_tags }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build tag list
+        id: tags
+        env:
+          GIF_TAGS: ${{ github.event.inputs.gif_tags || 'gif,animation,ios' }}
+        run: |
+          python scripts/add_tags.py \
+            --tags "$GIF_TAGS" \
+            --output tags.txt
+          # add_tags.py also writes gif_tags=... to $GITHUB_OUTPUT
+
+      - name: Upload tags artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gif-tags
+          path: tags.txt
+          retention-days: 1
+
+  # ---------------------------------------------------------------------------
+  # Job 4: Upload the GIF to GIPHY
+  # ---------------------------------------------------------------------------
+  upload:
+    name: Upload GIF to GIPHY
+    runs-on: ubuntu-latest
+    needs:
+      - register
+      - create-gif
+      - tag-gif
+    permissions:
+      contents: read
+    outputs:
+      giphy_gif_id:  ${{ steps.upload.outputs.giphy_gif_id }}
+      giphy_gif_url: ${{ steps.upload.outputs.giphy_gif_url }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: false
+
+      - name: Install Ruby dependencies
+        working-directory: scripts
+        run: bundle install --jobs 4 --retry 3
+
+      - name: Download GIF artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-gif
+          path: .
+
+      - name: Download tags artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: gif-tags
+          path: .
+
+      - name: Read tags from file
+        id: read-tags
+        run: |
+          TAGS=$(cat tags.txt | tr -d '\n')
+          echo "gif_tags=$TAGS" >> "$GITHUB_OUTPUT"
+
+      - name: Upload to GIPHY
+        id: upload
+        working-directory: scripts
+        env:
+          # The API key flows from Job 1's output through a secret-safe path.
+          # Note: job outputs are masked in logs when sourced from secrets.
+          GIPHY_API_KEY: ${{ needs.register.outputs.giphy_api_key }}
+          GIF_PATH:      ../output_ios.gif
+          GIF_TAGS:      ${{ steps.read-tags.outputs.gif_tags }}
+          GIF_SOURCE:    https://github.com/${{ github.repository }}
+          GIF_TITLE:     ${{ github.event.inputs.gif_title || '' }}
+        run: ruby upload_to_giphy.rb
+
+      - name: Print GIF URL
+        run: |
+          echo "GIF uploaded successfully!"
+          echo "URL: ${{ steps.upload.outputs.giphy_gif_url }}"
