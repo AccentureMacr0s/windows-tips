@@ -7,7 +7,7 @@ on:
         description: What should the GIF depict?
         required: true
         type: string
-        default: "A shining n-bit sunflower on a kitchen table, with a chef-client, knife, npm test, Node.js and Linux commands flowing like the Matrix"
+        default: "An AK-47 shooting at balloons, animated bullets falling and muzzle fire"
   pull_request:
     paths:
       - .github/workflows/generate-requested-gif.yml
@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      GIF_REQUEST: ${{ inputs.prompt || 'A shining n-bit sunflower on a kitchen table, with a chef-client, knife, npm test, Node.js and Linux commands flowing like the Matrix' }}
+      GIF_REQUEST: ${{ inputs.prompt || 'An AK-47 shooting at balloons, animated bullets falling and muzzle fire' }}
       OLLAMA_MODEL: qwen2.5:0.5b
     steps:
       - uses: actions/checkout@v4
