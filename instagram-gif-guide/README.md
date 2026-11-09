@@ -4,6 +4,29 @@ This guide walks you through creating a custom GIF with AI tools and uploading i
 
 ---
 
+## Generate a GIF from a CI request
+
+The repository's **Generate requested GIF** GitHub Actions workflow accepts a prompt through `workflow_dispatch`, or runs a sample request as a pull-request smoke test. For example:
+
+> A shining n-bit sunflower on a kitchen table, with a chef-client, knife, npm test, Node.js and Linux commands flowing like the Matrix.
+
+To run it, open **Actions → Generate requested GIF → Run workflow**, select a branch, enter the request, and start the run. When it completes, download the `requested-gif` artifact from the run's **Artifacts** section; it expires after seven days and is never added to Git.
+
+The workflow starts a local Ollama server with the small `qwen2.5:0.5b` model. Ollama interprets the request into a caption; the Ruby renderer creates a lightweight animated vector illustration, and FFmpeg encodes it as a looping GIF. This is a simple illustrated result, not a photorealistic image/video-generation model. Requests are limited to 2,000 characters. For local use, install Ruby, Ollama, `librsvg2-bin`, and FFmpeg, start Ollama, then run:
+
+```bash
+GIF_REQUEST="A shining sunflower beside a stream of npm test commands" \
+  ruby instagram-gif-guide/generate_request_gif.rb dist/requested.gif
+```
+
+The generator can also be smoke-tested without Ollama or FFmpeg:
+
+```bash
+ruby instagram-gif-guide/test_generate_request_gif.rb
+```
+
+---
+
 ## Overview
 
 [Giphy](https://giphy.com) is the most widely used GIF platform and is natively integrated into Instagram Stories, DMs, and Reels stickers. By uploading your own GIF to Giphy as a **verified artist or brand**, it becomes searchable directly inside Instagram.

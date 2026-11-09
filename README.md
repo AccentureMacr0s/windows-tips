@@ -32,7 +32,10 @@ windows-tips/
 │   ├── README.md               # Step-by-step guide + Ruby/iOS automation scripts
 │   ├── phone-browser-guide.md  # Full workflow from a phone browser (no app needed)
 │   ├── update-existing-gif.md  # Edit/reassign tags on existing Giphy GIFs
-│   └── validate-gif.ps1        # Giphy API validator: checks tag/GIF ID is searchable
+│   ├── validate-gif.ps1        # Giphy API validator: checks tag/GIF ID is searchable
+│   └── generate_request_gif.rb # Ollama-assisted GIF generator for CI artifacts
+├── .github/workflows/
+│   └── generate-requested-gif.yml # Manual prompt input + pull-request test artifact
 ├── remove-startup-apps.ps1     # Remove startup entries interactively
 ├── startup-cleaner-hint.ps1    # Quick one-shot startup cleaner
 └── validator.ps1               # Disk-usage report for a user profile
@@ -472,3 +475,7 @@ The `instagram-gif-guide/` folder contains a step-by-step guide for creating a c
 ```
 
 See [`instagram-gif-guide/README.md`](instagram-gif-guide/README.md) for the full walkthrough, Ruby scripts, iOS code samples, and troubleshooting tips.
+
+### Generate a GIF in GitHub Actions
+
+Run **Generate requested GIF** from the Actions tab and enter a prompt, or open a pull request that changes the generator to run its sample request. The workflow uses a small local Ollama model to caption the request, renders an animated vector illustration, and uploads `requested-gif` as a downloadable artifact for seven days. The result is not committed to the repository. This renderer creates a simple illustrated animation, not photorealistic AI video.
