@@ -39,6 +39,16 @@ windows-tips/
 ├── electromagnetic-device/     # Electromagnetic aircraft design concept
 │   ├── README.md               # Design description, components, and operating principles
 │   └── circuit.asc             # LTspice netlist for electromagnetic simulation
+├── instagram-gif-guide/        # How-to: add a custom AI GIF to Instagram via Giphy
+│   ├── README.md               # Step-by-step guide + Ruby/iOS automation scripts
+│   ├── phone-browser-guide.md  # Full workflow from a phone browser (no app needed)
+│   ├── update-existing-gif.md  # Edit/reassign tags on existing Giphy GIFs
+│   ├── validate-gif.ps1        # Giphy API validator: checks tag/GIF ID is searchable
+│   ├── generate_request_gif.rb # Ollama-assisted GIF generator for CI artifacts
+│   └── test_generate_request_gif.rb # Generator and model configuration tests
+├── .github/workflows/
+│   ├── generate-requested-gif.yml # Prompt input + downloadable GIF artifact
+│   └── giphy-pipeline.yml          # Video-to-GIPHY upload pipeline
 ├── remove-startup-apps.ps1     # Remove startup entries interactively
 ├── startup-cleaner-hint.ps1    # Quick one-shot startup cleaner
 └── validator.ps1               # Disk-usage report for a user profile
@@ -46,11 +56,17 @@ windows-tips/
 
 ---
 
-## Instagram GIF Pipeline
+## GIF Generation and Upload Workflows
 
-The `instagram-gif-guide/` directory and `scripts/` folder contain a fully
-automated pipeline for creating iOS-optimised GIFs from video files and
-uploading them to GIPHY for use in Instagram Stories and DMs.
+The default CI generation path is **Text prompt to GIF (download artifact)**.
+Enter a prompt in the Actions tab, or let pull-request CI render its sample
+prompt. It needs no video input or iPhone upload: the resulting GIF is
+downloadable from the run's artifact and is not committed to the repository.
+
+The separate **GIPHY Upload Pipeline** is optional and requires a video already
+in the repository. GitHub Actions does not take a video directly from an
+iPhone as a workflow input; use the text-prompt workflow when you do not have a
+repository video.
 
 ### Pipeline Files
 
@@ -62,17 +78,15 @@ uploading them to GIPHY for use in Instagram Stories and DMs.
 | [`scripts/add_tags.py`](scripts/add_tags.py) | Build GIPHY tag list; auto-expand Cyrillic with Latin transliteration |
 | [`scripts/upload_to_giphy.rb`](scripts/upload_to_giphy.rb) | Upload GIF to GIPHY via Upload API |
 | [`.github/workflows/giphy-pipeline.yml`](.github/workflows/giphy-pipeline.yml) | Four-job GitHub Actions pipeline |
+| [`.github/workflows/generate-requested-gif.yml`](.github/workflows/generate-requested-gif.yml) | Default: turn a prompt into a downloadable GIF artifact |
 
 ### Quick Start
 
-1. Add your GIPHY API key as a GitHub Actions secret named `GIPHY_API_KEY`.
-2. Push a video file under `videos/`, or trigger the workflow manually from the
-   **Actions** tab.
-3. The pipeline runs four jobs automatically:
-   ```
-   register → create-gif → tag-gif → upload
-   ```
-4. The uploaded GIF URL is printed at the end of the `upload` job.
+**Text prompt to GIF (no video):** Open **Actions → Text prompt to GIF (download artifact) → Run workflow**, enter a prompt, then download `requested-gif` from the run's artifacts.
+
+**Optional video-to-GIPHY upload:** Add a video under `videos/` or provide its repository path as `video_path`, and add `GIPHY_API_KEY` as an Actions secret.
+
+For that optional upload, the pipeline runs `register → create-gif → tag-gif → upload`; the uploaded GIF URL is printed at the end of the `upload` job.
 
 See [`instagram-gif-guide/README.md`](instagram-gif-guide/README.md) for
 detailed documentation, security guidelines, and troubleshooting.
@@ -470,3 +484,48 @@ The `electromagnetic-device/` folder contains a conceptual design for an aircraf
 The LTspice netlist (`electromagnetic-device/circuit.asc`) models the magnet coil drive circuit (`V1 = 24 V`, `L1`, `L2`, `R1`, `C1`, `D1`) and the high-voltage ioniser supply (`V2 = 5 kV`, `R2`, `C2`, `D2`).  Open it in [LTspice](https://www.analog.com/en/resources/design-tools-and-calculators/ltspice-simulator.html) and run the included `.op` and `.tran` analyses to inspect quiescent currents and coil flyback behaviour.
 
 See [`electromagnetic-device/README.md`](electromagnetic-device/README.md) for the full design description.
+
+---
+
+## How To: Add a GIF to Instagram Using AI (Giphy)
+
+The `instagram-gif-guide/` folder contains a step-by-step guide for creating a custom GIF with AI tools, uploading it to Giphy, and making it searchable inside Instagram Stories and DMs. It also includes Ruby automation scripts and iOS integration examples.
+
+### Quick Overview
+
+| Step | What to do |
+|------|------------|
+| 1 | Generate a short clip with an AI tool (Runway ML, Pika Labs, etc.) and convert to GIF |
+| 2 | Upload the GIF to [giphy.com](https://giphy.com) with descriptive tags |
+| 3 | Apply for a verified Giphy artist channel so the GIF is searchable in Instagram |
+| 4 | Find and use your GIF via the Instagram **GIF sticker** in Stories or DMs |
+
+### Ruby & iOS Highlights
+
+- **`gif_converter.rb`** — wraps FFmpeg to produce iOS-compatible GIFs (12 fps, 480 px, ≤ 15 MB)
+- **`gif_optimizer.rb`** — reduces palette depth and trims frames via `mini_magick`
+- **`giphy_upload.rb`** — uploads GIFs to Giphy via `Net::HTTP` multipart POST
+- **Fastlane lane** — automates the full convert → optimize → upload pipeline in iOS CI/CD
+- **CocoaPods** — `SDWebImage` and `Gifu` pods for rendering GIFs in UIKit / SwiftUI
+- **Swift & Objective-C** snippets for loading remote Giphy GIFs and local bundled GIFs
+
+### Files in this guide
+
+| File | Description |
+|------|-------------|
+| [`README.md`](instagram-gif-guide/README.md) | Main guide: create → upload → use in Stories + Ruby/iOS sections |
+| [`phone-browser-guide.md`](instagram-gif-guide/phone-browser-guide.md) | Workflow from a phone browser — no desktop or app needed |
+| [`update-existing-gif.md`](instagram-gif-guide/update-existing-gif.md) | Edit or reassign tags on existing Giphy GIFs |
+| [`validate-gif.ps1`](instagram-gif-guide/validate-gif.ps1) | PowerShell: validate a tag or GIF ID is live via Giphy API |
+
+**Validate a tag from PowerShell:**
+```powershell
+.\instagram-gif-guide\validate-gif.ps1 -ApiKey "YOUR_GIPHY_KEY" -Tag "юрий клинский"
+.\instagram-gif-guide\validate-gif.ps1 -ApiKey "YOUR_GIPHY_KEY" -GifId "abc123xyz"
+```
+
+See [`instagram-gif-guide/README.md`](instagram-gif-guide/README.md) for the full walkthrough, Ruby scripts, iOS code samples, and troubleshooting tips.
+
+### Generate a GIF in GitHub Actions
+
+Run **Generate requested GIF** from the Actions tab and enter a prompt, or open a pull request that changes the generator to run its sample request. The workflow uses a small local Ollama model to caption the request, renders an animated vector illustration, and uploads `requested-gif` as a downloadable artifact for seven days. The result is not committed to the repository. This renderer creates a simple illustrated animation, not photorealistic AI video.

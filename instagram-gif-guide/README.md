@@ -1,381 +1,566 @@
-# Instagram GIF Guide — Automated GIPHY Pipeline
+# How To: Add a GIF to Instagram Using AI (Giphy)
 
-A complete guide for creating iOS-optimised GIFs with AI tools, uploading them
-to GIPHY automatically via a GitHub Actions pipeline, and surfacing them in
-Instagram Stories and DMs via the GIF sticker search.
+This guide walks you through creating a custom GIF with AI tools and uploading it to Instagram via Giphy. It also covers Ruby-based automation and iOS-specific workflows for integrating GIFs into iPhone apps.
 
 ---
 
-## Table of Contents
+## Default CI workflow: text prompt to GIF
 
-1. [Quick-start Overview](#1-quick-start-overview)
-2. [Prerequisites](#2-prerequisites)
-3. [Step 1 — Generate the GIF](#3-step-1--generate-the-gif)
-4. [Step 2 — Add Metadata and Tags](#4-step-2--add-metadata-and-tags)
-5. [Step 3 — Upload to GIPHY](#5-step-3--upload-to-giphy)
-6. [Step 4 — GitHub Actions Pipeline](#6-step-4--github-actions-pipeline)
-7. [Step 5 — Use in Instagram](#7-step-5--use-in-instagram)
-8. [Security and Anonymity Best Practices](#8-security-and-anonymity-best-practices)
-9. [Tool Reference](#9-tool-reference)
-10. [Troubleshooting](#10-troubleshooting)
+The default GIF-generation path is **Text prompt to GIF (download artifact)**. It accepts a text prompt through `workflow_dispatch`, or creates the sample GIF in pull-request CI when the workflow or generator changes. No video file or iPhone upload is required. For example:
 
----
+> A shining n-bit sunflower on a kitchen table, with a chef-client, knife, npm test, Node.js and Linux commands flowing like the Matrix.
 
-## 1. Quick-start Overview
+To run it, open **Actions → Text prompt to GIF (download artifact) → Run workflow**, select a branch, enter the request (or keep the default), and start the run. Ollama turns the prompt into a short caption; Ruby and FFmpeg render that as an animated vector GIF. The GIF is the output, not an input video. Download the `requested-gif` artifact from the completed run's **Artifacts** section; it expires after seven days and is never added to Git. This creates a lightweight illustration, not photorealistic AI video.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  video file  →  generate_gif.py  →  output_ios.gif              │
-│  base tags   →  add_tags.py      →  tags.txt                    │
-│  tags.txt    →  upload_to_giphy.rb →  GIPHY GIF URL             │
-│  all steps   →  giphy-pipeline.yml (GitHub Actions)             │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-The entire flow is automated via the pipeline in
-`.github/workflows/giphy-pipeline.yml`.  Trigger it manually from the
-**Actions** tab, or push a video file under the `videos/` directory.
-
----
-
-## 2. Prerequisites
-
-| Tool / Account | Purpose | Install |
-|---|---|---|
-| FFmpeg | GIF generation | `sudo apt install ffmpeg` / [ffmpeg.org](https://ffmpeg.org) |
-| Python 3.7+ | `generate_gif.py`, `add_tags.py` | [python.org](https://www.python.org) |
-| Ruby 3.x | `register_account.rb`, `upload_to_giphy.rb` | [ruby-lang.org](https://www.ruby-lang.org) |
-| Bundler | Ruby gem management | `gem install bundler` |
-| GIPHY Developer account | Upload API key | [developers.giphy.com](https://developers.giphy.com) |
-
-### Install Ruby dependencies
+The workflow starts a local Ollama server with the small `qwen2.5:0.5b` model. Requests are limited to 2,000 characters. For local use, install Ruby, Ollama, `librsvg2-bin`, and FFmpeg, start Ollama, then run:
 
 ```bash
-cd scripts
-bundle install
+GIF_REQUEST="A shining sunflower beside a stream of npm test commands" \
+  ruby instagram-gif-guide/generate_request_gif.rb dist/requested.gif
+```
+
+The generator can also be smoke-tested without Ollama or FFmpeg:
+
+```bash
+ruby instagram-gif-guide/test_generate_request_gif.rb
 ```
 
 ---
 
-## 3. Step 1 — Generate the GIF
+## Automated GIPHY upload pipeline
 
-### `scripts/generate_gif.py`
+The optional [`GIPHY Upload Pipeline`](../.github/workflows/giphy-pipeline.yml) is a separate video-to-GIPHY flow. It requires a video already available in the repository (or pushed under `videos/`); GitHub Actions does not accept a video directly from an iPhone as a workflow input. This pipeline builds GIPHY tags and uploads the converted result. Run it manually from **Actions**, or push a video under `videos/` to `main` or `master`. Add `GIPHY_API_KEY` under **Settings → Secrets and variables → Actions** before running it.
 
-Converts any video file to a GIF optimised for iOS/iPhone playback using a
-two-pass FFmpeg palette workflow for maximum colour fidelity.
+The manual inputs are `video_path` (default `videos/input.mp4`), `gif_tags` (default `gif,animation,ios`), `gif_fps` (12), `gif_width` (480), and optional `gif_title`. The pipeline runs `register → create-gif → tag-gif → upload`; its intermediate GIF artifact is retained for one day. Use the text-prompt workflow above when no source video is available.
 
-**iOS-specific FFmpeg settings:**
+---
 
-| Parameter | Value | Reason |
-|---|---|---|
-| `fps` | 12 | Keeps file size < 15 MB on typical iPhone clips |
-| `scale` | `480:-1` | Matches Instagram Story display width |
-| `flags=lanczos` | — | Sharper downscale than bilinear |
-| `palettegen/paletteuse` | 256 colours | Best GIF quality within format limits |
-| `loop` | `0` | Infinite loop (required for Instagram) |
+## Overview
 
-**Basic conversion:**
+[Giphy](https://giphy.com) is the most widely used GIF platform and is natively integrated into Instagram Stories, DMs, and Reels stickers. By uploading your own GIF to Giphy as a **verified artist or brand**, it becomes searchable directly inside Instagram.
+
+---
+
+## Step 1 — Create or Generate Your GIF Using AI
+
+### Option A: AI Video-to-GIF (recommended)
+
+1. Use an AI video generator (e.g. **Runway ML**, **Pika Labs**, or **Kling AI**) to create a short clip (2–6 seconds).
+2. Export the clip as `.mp4` or `.mov`.
+3. Convert it to GIF using one of:
+   - [Ezgif.com](https://ezgif.com/video-to-gif) — free, browser-based
+   - [FFmpeg](https://ffmpeg.org/) (Windows / PowerShell):
+     ```powershell
+     ffmpeg -i input.mp4 -vf "fps=15,scale=480:-1:flags=lanczos" -loop 0 output.gif
+     ```
+
+### Option B: AI Image Animation
+
+1. Generate a still image with an AI tool (e.g. **Midjourney**, **DALL·E**, **Stable Diffusion**).
+2. Animate it using **Viggle AI**, **Leiapix**, or **Animated Drawings**.
+3. Export as GIF or convert from video (see Option A, step 3).
+
+### Recommended GIF specs for Giphy / Instagram
+
+| Setting     | Value                    |
+|-------------|--------------------------|
+| Width       | 480 px (minimum)         |
+| Frame rate  | 15–24 fps                |
+| Duration    | 2–6 seconds              |
+| File size   | ≤ 15 MB                  |
+| Format      | `.gif`                   |
+
+---
+
+## Step 2 — Upload Your GIF to Giphy
+
+1. Go to [giphy.com](https://giphy.com) and sign in (or create a free account).
+2. Click **Upload** (top-right corner).
+3. Drag and drop your `.gif` file or paste a URL.
+4. Add:
+   - **Source URL** — link to your website or social profile.
+   - **Tags** — include your name/brand so people can find it (e.g. `юрий клинский`, `yuriy klinsky`, your niche keywords).
+5. Click **Upload to GIPHY**.
+
+> **Note:** Newly uploaded GIFs from regular accounts are **private by default**. To make them searchable in Instagram, you need a verified Giphy artist or brand channel (see Step 3).
+
+---
+
+## Step 3 — Get a Verified Giphy Artist Channel
+
+A verified Giphy channel makes your GIFs publicly searchable inside Instagram, TikTok, WhatsApp, and other platforms.
+
+1. Apply at: [giphy.com/submit](https://giphy.com/submit)
+2. Fill in your **channel name**, **description**, **website**, and **social links**.
+3. Upload at least **5 original GIFs** to your channel before applying.
+4. Wait for Giphy review (usually 1–7 business days).
+
+Once approved, all GIFs you upload to your channel will appear in the Instagram GIF sticker search.
+
+---
+
+## Step 4 — Use Your GIF in Instagram
+
+### In Instagram Stories
+
+1. Open Instagram and tap **+** → **Story**.
+2. Take or upload a photo/video.
+3. Tap the **sticker icon** (😊) at the top.
+4. Tap **GIF**.
+5. Search for your Giphy channel name or tags (e.g. `юрий клинский`).
+6. Tap your GIF to add it to the story.
+7. Resize, rotate, and place it anywhere.
+8. Tap **Your Story** to post.
+
+### In Instagram DMs
+
+1. Open a conversation.
+2. Tap the **GIF** button in the message bar.
+3. Search for your tag or channel name.
+4. Tap to send.
+
+---
+
+## Ruby Automation for GIF Creation and iOS Optimization
+
+Ruby is well-suited for scripting GIF pipelines and integrating with iOS toolchains (Fastlane, CocoaPods). The scripts below use the `mini_magick` gem (wraps ImageMagick/FFmpeg) and standard Ruby to automate conversion, optimization, and uploading.
+
+### Prerequisites
 
 ```bash
-python scripts/generate_gif.py videos/clip.mp4
-# → output_ios.gif  (480px wide, 12 fps, ≤ 15 MB)
+# Install required gems
+gem install mini_magick
+gem install giphy      # unofficial Giphy API client
 ```
 
-**Custom options:**
+> **Note:** `mini_magick` requires [ImageMagick](https://imagemagick.org/) and [FFmpeg](https://ffmpeg.org/) to be installed on your system.
 
-```bash
-# Slower frame rate, narrower width
-python scripts/generate_gif.py clip.mp4 --fps 10 --width 360
+---
 
-# Trim 5 seconds starting at 3 s
-python scripts/generate_gif.py clip.mp4 --start 3 --duration 5
+### Convert MP4 to iOS-Compatible GIF (Ruby + FFmpeg)
 
-# Specify output path
-python scripts/generate_gif.py clip.mp4 --output my_gif.gif
-```
-
-**Ruby wrapper — `gif_converter.rb` (inline snippet):**
+iOS devices display GIFs best at ≤ 15 fps, ≤ 480 px wide, and under 15 MB. The script below wraps the FFmpeg call with Ruby to enforce these constraints automatically.
 
 ```ruby
+# gif_converter.rb — Convert an MP4 to an iOS-compatible GIF
 require 'open3'
+require 'fileutils'
 
-def convert_to_gif(input:, output: 'output_ios.gif', fps: 12, width: 480)
-  palette = '/tmp/palette.png'
+MAX_SIZE_MB   = 15
+TARGET_FPS    = 12   # conservative for smooth iOS playback
+TARGET_WIDTH  = 480  # minimum recommended by Giphy; safe for all iPhones
 
-  pass1 = [
-    'ffmpeg', '-y', '-i', input,
-    '-vf', "fps=#{fps},scale=#{width}:-1:flags=lanczos,palettegen",
-    '-frames:v', '1', palette
+def convert_to_gif(input_path, output_path, fps: TARGET_FPS, width: TARGET_WIDTH)
+  # iOS-specific FFmpeg flags:
+  #   -vf fps=N           — lock frame rate to N (12–15 recommended for iOS)
+  #   scale=W:-1          — scale to W px wide, preserve aspect ratio
+  #   flags=lanczos       — high-quality downscaling filter
+  #   -loop 0             — loop forever (required for GIF sticker behaviour)
+  cmd = [
+    'ffmpeg', '-y', '-i', input_path,
+    '-vf', "fps=#{fps},scale=#{width}:-1:flags=lanczos",
+    '-loop', '0',
+    output_path
   ]
-  pass2 = [
-    'ffmpeg', '-y', '-i', input, '-i', palette,
-    '-lavfi', "fps=#{fps},scale=#{width}:-1:flags=lanczos [x]; [x][1:v] paletteuse",
-    '-loop', '0', output
-  ]
 
-  [pass1, pass2].each do |cmd|
-    stdout, stderr, status = Open3.capture3(*cmd)
-    raise "FFmpeg error:\n#{stderr}" unless status.success?
+  stdout, stderr, status = Open3.capture3(*cmd)
+  raise "FFmpeg error:\n#{stderr}" unless status.success?
+
+  size_mb = File.size(output_path) / (1024.0 * 1024.0)
+  puts "Output: #{output_path} (#{size_mb.round(2)} MB)"
+
+  if size_mb > MAX_SIZE_MB
+    warn "WARNING: File is #{size_mb.round(2)} MB — exceeds #{MAX_SIZE_MB} MB limit."
+    warn "Try reducing fps or width. Example: convert_to_gif(..., fps: 10, width: 360)"
   end
 
-  size_mb = File.size(output) / (1024.0 * 1024)
-  raise "GIF too large: #{size_mb.round(2)} MB (max 15 MB)" if size_mb > 15
+  output_path
+end
 
-  output
+# Usage
+convert_to_gif('input.mp4', 'output.gif')
+```
+
+**Run:**
+```bash
+ruby gif_converter.rb
+```
+
+---
+
+### iOS-Specific FFmpeg One-Liner
+
+For quick conversion optimised for iPhone screens (use in Terminal or CI scripts):
+
+```bash
+# iOS-safe GIF: 12 fps, 480 px wide, high-quality Lanczos scale, loops forever
+ffmpeg -i input.mp4 \
+  -vf "fps=12,scale=480:-1:flags=lanczos" \
+  -loop 0 \
+  output_ios.gif
+```
+
+Key differences from the general command:
+- `fps=12` — lower than the 15–24 desktop recommendation; avoids frame-drop jitter on older iPhones
+- `scale=480:-1` — matches Giphy's minimum and the native sticker picker resolution
+- No `-b:v` flag — GIF encoding is palette-based, not bitrate-based
+
+---
+
+### Optimize an Existing GIF for iOS (Ruby + ImageMagick)
+
+```ruby
+# gif_optimizer.rb — Reduce GIF file size while keeping iOS compatibility
+require 'mini_magick'
+
+MAX_FRAMES    = 60   # cap total frames (5 s × 12 fps)
+TARGET_COLORS = 128  # reduce colour palette to shrink file size
+
+def optimize_gif(input_path, output_path)
+  image = MiniMagick::Image.open(input_path)
+
+  image.combine_options do |c|
+    c.coalesce                          # flatten all layers
+    c.layers 'Optimize'                 # remove redundant pixels between frames
+    c.colors TARGET_COLORS.to_s        # reduce palette depth
+    c.depth '8'                         # 8-bit colour
+    c.loop '0'                          # loop forever
+  end
+
+  # Trim to MAX_FRAMES if GIF is too long
+  frames = MiniMagick::Image.open(input_path).frames
+  if frames.length > MAX_FRAMES
+    puts "Trimming from #{frames.length} to #{MAX_FRAMES} frames..."
+    image.combine_options { |c| c.delete "#{MAX_FRAMES}--1" }
+  end
+
+  image.write(output_path)
+
+  size_mb = File.size(output_path) / (1024.0 * 1024.0)
+  puts "Optimized: #{output_path} (#{size_mb.round(2)} MB)"
+end
+
+# Usage
+optimize_gif('output.gif', 'output_optimized.gif')
+```
+
+**Run:**
+```bash
+ruby gif_optimizer.rb
+```
+
+---
+
+### Upload GIF to Giphy via Ruby
+
+```ruby
+# giphy_upload.rb — Upload a GIF to Giphy with iOS-friendly tags
+require 'net/http'
+require 'uri'
+require 'json'
+
+GIPHY_UPLOAD_URL = 'https://upload.giphy.com/v1/gifs'
+
+def upload_to_giphy(gif_path, api_key:, tags:, source_url: '')
+  uri  = URI.parse(GIPHY_UPLOAD_URL)
+  http = Net::HTTP.new(uri.host, uri.port)
+  http.use_ssl = true
+
+  # Build multipart form data
+  boundary = "GiphyRubyUpload#{Time.now.to_i}"
+  body = build_multipart(gif_path, api_key, tags, source_url, boundary)
+
+  request = Net::HTTP::Post.new(uri.path)
+  request['Content-Type'] = "multipart/form-data; boundary=#{boundary}"
+  request.body = body
+
+  response = http.request(request)
+  result   = JSON.parse(response.body)
+
+  if result.dig('data', 'id')
+    gif_id = result['data']['id']
+    puts "Upload successful!"
+    puts "GIF ID : #{gif_id}"
+    puts "URL    : https://giphy.com/gifs/#{gif_id}"
+    gif_id
+  else
+    raise "Upload failed: #{response.body}"
+  end
+end
+
+def build_multipart(gif_path, api_key, tags, source_url, boundary)
+  fields = {
+    'api_key' => api_key,
+    'tags'    => tags,
+    'source'  => source_url
+  }
+
+  parts = fields.map do |name, value|
+    "--#{boundary}\r\nContent-Disposition: form-data; name=\"#{name}\"\r\n\r\n#{value}\r\n"
+  end
+
+  gif_data = File.binread(gif_path)
+  parts << "--#{boundary}\r\n" \
+           "Content-Disposition: form-data; name=\"file\"; filename=\"#{File.basename(gif_path)}\"\r\n" \
+           "Content-Type: image/gif\r\n\r\n"
+  parts << gif_data
+  parts << "\r\n--#{boundary}--\r\n"
+  parts.join
+end
+
+# Usage — replace with your Giphy API key
+upload_to_giphy(
+  'output_optimized.gif',
+  api_key:    ENV['GIPHY_API_KEY'],
+  tags:       'юрий клинский, yuriy klinsky, motivation, ios, iphone',
+  source_url: 'https://www.instagram.com/yourhandle'
+)
+```
+
+**Run:**
+```bash
+GIPHY_API_KEY="your_key_here" ruby giphy_upload.rb
+```
+
+---
+
+## iOS Tools Integration: Fastlane and CocoaPods
+
+Ruby powers both [Fastlane](https://fastlane.tools/) and [CocoaPods](https://cocoapods.org/), making it a natural fit for iOS GIF workflows.
+
+### Fastlane — Automate GIF Processing in CI/CD
+
+Add a custom Fastlane lane to your `Fastfile` to convert and upload GIFs as part of your app's build pipeline:
+
+```ruby
+# Fastfile (add to your existing Fastfile)
+require_relative '../scripts/gif_converter'   # path to gif_converter.rb above
+require_relative '../scripts/giphy_upload'    # path to giphy_upload.rb above
+
+lane :process_and_upload_gifs do
+  # Convert raw assets in the project to iOS-optimised GIFs
+  Dir.glob('assets/raw/*.mp4').each do |mp4|
+    gif_out = mp4.sub('raw', 'gifs').sub('.mp4', '.gif')
+    FileUtils.mkdir_p(File.dirname(gif_out))
+    convert_to_gif(mp4, gif_out, fps: 12, width: 480)
+    optimize_gif(gif_out, gif_out)   # optimize in place
+    upload_to_giphy(
+      gif_out,
+      api_key:    ENV['GIPHY_API_KEY'],
+      tags:       'yourapp, ios, iphone',
+      source_url: 'https://apps.apple.com/app/yourapp/id000000000'
+    )
+  end
+  UI.success "All GIFs processed and uploaded!"
 end
 ```
 
----
-
-## 4. Step 2 — Add Metadata and Tags
-
-### `scripts/add_tags.py`
-
-Builds a GIPHY-compliant tag list, automatically expanding Cyrillic tags with
-their Latin transliterations to maximise discoverability.
-
-**GIPHY tag rules enforced by the script:**
-
-| Rule | Value |
-|---|---|
-| Maximum tags | 10 |
-| Maximum tag length | 30 characters |
-| Allowed characters | Letters, digits, spaces, `_`, `-` |
-| Cyrillic tags | Preserved + Latin transliteration added |
-
-**Examples:**
-
+**Run:**
 ```bash
-# Cyrillic tags are automatically transliterated
-python scripts/add_tags.py --tags "юрий клинский,gif,funny" --print
-# → юрий клинский,yurij klinskij,gif,funny
-
-# Write to file (used by the pipeline)
-python scripts/add_tags.py --tags "animation,loop,ios" --output tags.txt
-
-# Use environment variable (same as GitHub Actions)
-GIF_TAGS="animation,loop" python scripts/add_tags.py --print
+bundle exec fastlane process_and_upload_gifs
 ```
 
-**Cyrillic → Latin transliteration table (excerpt):**
+### CocoaPods — Add GIF Support to Your iOS App
 
-| Cyrillic | Latin |
-|---|---|
-| ю | yu |
-| я | ya |
-| ж | zh |
-| ш | sh |
-| щ | shch |
-| ч | ch |
-| ц | ts |
+Add a GIF rendering library to your `Podfile`:
 
----
+```ruby
+# Podfile
+platform :ios, '13.0'
+use_frameworks!
 
-## 5. Step 3 — Upload to GIPHY
+target 'YourApp' do
+  # Render GIFs natively in UIKit / SwiftUI
+  pod 'SDWebImage',           '~> 5.0'   # UIImageView category + GIF support
+  pod 'SDWebImageWebPCoder',  '~> 0.14'  # optional: WebP support alongside GIF
 
-### `scripts/upload_to_giphy.rb`
+  # Alternative: Gifu (pure Swift, lightweight)
+  # pod 'Gifu', '~> 3.4'
+end
+```
 
-Uploads the GIF to GIPHY via the [GIPHY Upload API](https://developers.giphy.com/docs/api/endpoint/#upload)
-using a multipart POST request.
-
-**Environment variables:**
-
-| Variable | Required | Description |
-|---|---|---|
-| `GIPHY_API_KEY` | ✅ | Your GIPHY Developer API key |
-| `GIF_PATH` | ✅ | Local path to the GIF file |
-| `GIF_TAGS` | — | Comma-separated tags from `add_tags.py` |
-| `GIF_SOURCE` | — | Attribution URL (e.g. your GitHub repo) |
-| `GIF_TITLE` | — | Human-readable title |
-
-**Local usage:**
-
+**Install:**
 ```bash
-export GIPHY_API_KEY="your_api_key_here"
-export GIF_PATH="output_ios.gif"
-export GIF_TAGS="animation,ios,loop"
-export GIF_SOURCE="https://github.com/your-org/your-repo"
-
-cd scripts && ruby upload_to_giphy.rb
-# → [upload_to_giphy] Upload successful. GIF ID: abc123xyz
-# → [upload_to_giphy] URL: https://giphy.com/gifs/abc123xyz
-```
-
-### `scripts/register_account.rb`
-
-Validates your GIPHY API key is active and surfaces the key plus a channel
-username as GitHub Actions step outputs for use by downstream jobs.
-
-```bash
-export GIPHY_API_KEY="your_api_key_here"
-cd scripts && ruby register_account.rb
-# → [register_account] API key is valid.
-# → [register_account] Registration complete. Username: swift_pixel_a1b2c3
+pod install
+open YourApp.xcworkspace
 ```
 
 ---
 
-## 6. Step 4 — GitHub Actions Pipeline
+## Integrating GIFs into iOS Applications
 
-### `.github/workflows/giphy-pipeline.yml`
+### Swift — Display a Giphy GIF with SDWebImage
 
-A four-job pipeline that automates the entire flow:
+```swift
+import UIKit
+import SDWebImage
 
+class GifViewController: UIViewController {
+
+    @IBOutlet weak var gifImageView: UIImageView!
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        loadGiphyGif()
+    }
+
+    func loadGiphyGif() {
+        // Use the direct media URL from Giphy (replace GIPHY_ID with your GIF's ID)
+        let gifURL = URL(string: "https://media.giphy.com/media/GIPHY_ID/giphy.gif")!
+
+        // SDWebImage handles download, caching, and looped playback automatically
+        gifImageView.sd_setImage(with: gifURL, placeholderImage: UIImage(named: "placeholder"))
+    }
+}
 ```
-register → create-gif → tag-gif → upload
+
+### Swift — Display a Local GIF with Gifu
+
+```swift
+import UIKit
+import Gifu
+
+class LocalGifViewController: UIViewController {
+
+    @IBOutlet weak var gifView: GIFImageView!   // use GIFImageView instead of UIImageView
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        // Load a bundled GIF from the app's Assets catalog or Bundle
+        if let gifURL = Bundle.main.url(forResource: "output_ios", withExtension: "gif") {
+            gifView.prepareForAnimation(withGIFURL: gifURL, loopCount: 0)  // 0 = infinite
+            gifView.startAnimating()
+        }
+    }
+}
 ```
 
-| Job | Script | Purpose |
-|---|---|---|
-| `register` | `register_account.rb` | Validate API key; output credentials |
-| `create-gif` | `generate_gif.py` | Convert video → iOS GIF |
-| `tag-gif` | `add_tags.py` | Build & validate tag list |
-| `upload` | `upload_to_giphy.rb` | POST GIF to GIPHY API |
+### Objective-C — Display a Giphy GIF with SDWebImage
 
-### Setup
+```objc
+#import <UIKit/UIKit.h>
+#import <SDWebImage/SDWebImage.h>
 
-1. **Add your GIPHY API key as a secret:**
-   - Go to **Settings → Secrets and variables → Actions → New repository secret**
-   - Name: `GIPHY_API_KEY`
-   - Value: your key from [developers.giphy.com](https://developers.giphy.com)
+@interface GifViewController : UIViewController
+@property (weak, nonatomic) IBOutlet UIImageView *gifImageView;
+@end
 
-2. **Trigger the pipeline:**
-   - **Manual:** Actions tab → *GIPHY Upload Pipeline* → *Run workflow*
-     - Fill in `video_path`, `gif_tags`, `fps`, `width`, and optional `gif_title`.
-   - **Automatic:** Push a video file under the `videos/` directory.
+@implementation GifViewController
 
-### Pipeline inputs (manual trigger)
+- (void)viewDidLoad {
+    [super viewDidLoad];
 
-| Input | Default | Description |
-|---|---|---|
-| `video_path` | `videos/input.mp4` | Path to source video in the repo |
-| `gif_tags` | `gif,animation,ios` | Comma-separated tags |
-| `gif_fps` | `12` | Frames per second |
-| `gif_width` | `480` | Output width in pixels |
-| `gif_title` | *(empty)* | Title shown on GIPHY |
+    NSURL *gifURL = [NSURL URLWithString:@"https://media.giphy.com/media/GIPHY_ID/giphy.gif"];
+    [self.gifImageView sd_setImageWithURL:gifURL
+                         placeholderImage:[UIImage imageNamed:@"placeholder"]];
+}
 
-### Pipeline skeleton (abbreviated)
-
-```yaml
-jobs:
-  register:
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ruby/setup-ruby@v1
-      - run: bundle install
-        working-directory: scripts
-      - run: ruby register_account.rb
-        id: register
-        env:
-          GIPHY_API_KEY: ${{ secrets.GIPHY_API_KEY }}
-
-  create-gif:
-    needs: register
-    steps:
-      - run: sudo apt-get install -y ffmpeg
-      - run: python scripts/generate_gif.py "$INPUT_VIDEO" --fps 12 --width 480
-        env:
-          INPUT_VIDEO: ${{ github.event.inputs.video_path }}
-
-  tag-gif:
-    needs: create-gif
-    steps:
-      - run: python scripts/add_tags.py --tags "$GIF_TAGS"
-        env:
-          GIF_TAGS: ${{ github.event.inputs.gif_tags }}
-
-  upload:
-    needs: [register, create-gif, tag-gif]
-    steps:
-      - run: ruby upload_to_giphy.rb
-        working-directory: scripts
-        env:
-          GIPHY_API_KEY: ${{ needs.register.outputs.giphy_api_key }}
-          GIF_PATH:      ../output_ios.gif
-          GIF_TAGS:      ${{ steps.read-tags.outputs.gif_tags }}
+@end
 ```
+
+### SwiftUI — Display a GIF with SDWebImageSwiftUI
+
+```ruby
+# Add to Podfile
+pod 'SDWebImageSwiftUI', '~> 3.0'
+```
+
+```swift
+import SwiftUI
+import SDWebImageSwiftUI
+
+struct GifView: View {
+    var body: some View {
+        WebImage(url: URL(string: "https://media.giphy.com/media/GIPHY_ID/giphy.gif"))
+            .resizable()
+            .placeholder { ProgressView() }
+            .indicator(.activity)
+            .transition(.fade(duration: 0.3))
+            .scaledToFit()
+            .frame(width: 300)
+    }
+}
+```
+
+### GIF Asset Best Practices for iOS
+
+| Concern           | Recommendation                                                        |
+|-------------------|-----------------------------------------------------------------------|
+| Frame rate        | 10–12 fps for smooth playback on older iPhones (A12 and below)        |
+| Max width         | 480 px — matches Retina display at 1× and Giphy sticker resolution    |
+| File size         | ≤ 5 MB for in-app assets; ≤ 15 MB for Giphy uploads                  |
+| Looping           | Always set `loopCount: 0` (infinite) for sticker-style animations     |
+| Memory            | Prefer remote URLs (SDWebImage caches automatically) over bundling    |
+| Accessibility     | Set `accessibilityLabel` on the image view; pause animation on Reduce Motion |
 
 ---
 
-## 7. Step 5 — Use in Instagram
+## Ruby's Role in the GIF-to-iOS Pipeline
 
-Once the GIF is live on GIPHY (may take up to 24 hours to index):
+Ruby ties all stages of the pipeline together:
 
-### Instagram Stories
+| Stage                  | Tool / Language      | Ruby's role                                      |
+|------------------------|----------------------|--------------------------------------------------|
+| GIF conversion         | FFmpeg (via Ruby)    | `Open3` wraps the FFmpeg subprocess              |
+| GIF optimization       | ImageMagick (via Ruby) | `mini_magick` gem provides a Ruby API           |
+| Giphy upload           | Giphy REST API       | `Net::HTTP` handles multipart upload             |
+| iOS CI/CD automation   | Fastlane (Ruby DSL)  | `Fastfile` lanes automate the full pipeline      |
+| iOS dependency mgmt    | CocoaPods (Ruby)     | `Podfile` DSL installs GIF rendering libraries   |
+| Tag validation         | PowerShell / Ruby    | Both languages can call the Giphy Search API     |
 
-1. Open a new Story → tap the **sticker** icon.
-2. Search for your tag (e.g. `юрий клинский` or the Latin transliteration).
-3. Tap the GIF to add it to your Story.
-
-### Instagram DMs
-
-1. Open a conversation → tap the **GIF** button.
-2. Search for your tag.
-3. Tap the GIF to send it.
-
-> **Tip:** For a GIF to appear in Instagram's sticker search, the GIPHY channel
-> that uploaded it must be **verified**.  Apply at
-> [support.giphy.com/hc/en-us/articles/360020623532](https://support.giphy.com/hc/en-us/articles/360020623532).
+Ruby is not the only option — the same FFmpeg commands and Giphy API calls work from Python, Node.js, or PowerShell. Ruby's advantage here is the native integration with Fastlane and CocoaPods, which are already part of most iOS development workflows.
 
 ---
 
-## 8. Security and Anonymity Best Practices
+## Tips for Discoverability
 
-| Topic | Recommendation |
-|---|---|
-| **API key storage** | Store in GitHub Actions secrets, never in code or logs |
-| **Key rotation** | Rotate via [developers.giphy.com](https://developers.giphy.com) after any exposure |
-| **Log masking** | GitHub Actions automatically masks secret values in logs |
-| **Output scoping** | API key travels only between jobs as a masked step output |
-| **HTTPS only** | All API calls in the scripts use HTTPS (`api.giphy.com`, `upload.giphy.com`) |
-| **Minimal permissions** | Use a GIPHY key scoped to upload only; do not reuse a key across unrelated projects |
-| **Credential lifetime** | Generate per-pipeline credentials where possible; revoke after use |
-| **Repo access** | Set the repository to private while testing; make public only when ready |
-
-### How secrets flow through the pipeline
-
-```
-GitHub Actions secret
-  GIPHY_API_KEY
-       │
-       ▼
-  register job
-  └─ register_account.rb
-     └─ writes to $GITHUB_OUTPUT (masked)
-             │
-             ▼
-  upload job
-  └─ GIPHY_API_KEY = ${{ needs.register.outputs.giphy_api_key }}
-     └─ upload_to_giphy.rb → HTTPS POST → upload.giphy.com
-```
-
-The raw key is never printed to the Actions log.
+- Use **consistent tags** across all your GIFs (brand name, niche keywords, your name).
+- Add **transliterated versions** of your name as tags (e.g. both `юрий клинский` and `yuriy klinsky`).
+- Upload GIFs in **series** (5–10 at a time) — Giphy favors active channels.
+- Share your Giphy channel link in your Instagram bio to drive traffic.
 
 ---
 
-## 9. Tool Reference
+## Additional Guides
 
-| Tool | Language | Role |
-|---|---|---|
-| `scripts/register_account.rb` | Ruby | Validate API key; output credentials to pipeline |
-| `scripts/generate_gif.py` | Python | Convert video → iOS-optimised GIF via FFmpeg |
-| `scripts/add_tags.py` | Python | Build & validate GIPHY tag list; expand Cyrillic |
-| `scripts/upload_to_giphy.rb` | Ruby | Upload GIF to GIPHY via Upload API |
-| `scripts/Gemfile` | Ruby | Declares `multipart-post` gem dependency |
-| `.github/workflows/giphy-pipeline.yml` | YAML | Four-job GitHub Actions pipeline |
-| FFmpeg | C (system) | Video decoding, palette generation, GIF encoding |
+| File | Description |
+|------|-------------|
+| [`phone-browser-guide.md`](phone-browser-guide.md) | Complete workflow from a phone browser — no desktop or Instagram app needed |
+| [`update-existing-gif.md`](update-existing-gif.md) | Edit tags, reassign, or bulk-retag existing Giphy GIFs |
+| [`validate-gif.ps1`](validate-gif.ps1) | PowerShell script — validates a tag or GIF ID is live and searchable via the Giphy API |
 
 ---
 
-## 10. Troubleshooting
+## Quick Reference
 
-| Problem | Cause | Solution |
-|---|---|---|
-| `GIPHY_API_KEY is not set` | Missing secret | Add key in Settings → Secrets → Actions |
-| `GIPHY API key validation failed (HTTP 401)` | Invalid or expired key | Regenerate key at developers.giphy.com |
-| `GIF too large` | Clip too long / high fps | Add `--duration`, lower `--fps` or `--width` |
-| `ffmpeg: command not found` | FFmpeg not installed | Run `sudo apt-get install ffmpeg` or install from ffmpeg.org |
-| `No valid tags after processing` | All tags failed validation | Check tag length (≤ 30 chars) and allowed characters |
-| GIF not appearing in Instagram search | Channel not verified | Apply for GIPHY channel verification |
-| `bundle: command not found` | Bundler not installed | Run `gem install bundler` |
-| Tags truncated to 10 | GIPHY limit | Provide at most 10 tags (script auto-truncates) |
+| Tool                 | Purpose                          | Link                                                         |
+|----------------------|----------------------------------|--------------------------------------------------------------|
+| Giphy                | Host & distribute GIFs           | [giphy.com](https://giphy.com)                               |
+| Giphy Developers     | API keys & documentation         | [developers.giphy.com](https://developers.giphy.com)         |
+| Ezgif                | Convert video → GIF              | [ezgif.com](https://ezgif.com)                               |
+| Runway ML            | AI video generation              | [runwayml.com](https://runwayml.com)                         |
+| Pika Labs            | AI video generation              | [pika.art](https://pika.art)                                 |
+| FFmpeg               | CLI video/GIF conversion         | [ffmpeg.org](https://ffmpeg.org)                             |
+| Midjourney           | AI image generation              | [midjourney.com](https://midjourney.com)                     |
+| mini_magick          | Ruby ImageMagick wrapper         | [github.com/minimagick/minimagick](https://github.com/minimagick/minimagick) |
+| Fastlane             | iOS CI/CD automation (Ruby DSL)  | [fastlane.tools](https://fastlane.tools)                     |
+| CocoaPods            | iOS dependency manager (Ruby)    | [cocoapods.org](https://cocoapods.org)                       |
+| SDWebImage           | iOS GIF rendering (UIKit/SwiftUI)| [github.com/SDWebImage/SDWebImage](https://github.com/SDWebImage/SDWebImage) |
+| Gifu                 | iOS GIF rendering (pure Swift)   | [github.com/kaishin/Gifu](https://github.com/kaishin/Gifu)   |
+
+---
+
+## Troubleshooting
+
+| Problem                                     | Solution                                                                 |
+|---------------------------------------------|--------------------------------------------------------------------------|
+| GIF not showing in Instagram search         | Ensure your Giphy channel is verified; newly uploaded GIFs may take 24h  |
+| GIF too large to upload                     | Reduce resolution to 480 px wide or lower frame rate to 10–12 fps        |
+| Tags not returning results in Instagram     | Use simpler, shorter tags; avoid special characters                       |
+| Giphy upload rejected                       | Check that the GIF is original content and meets Giphy community guidelines |
+| GIF stutters on older iPhones              | Lower fps to 10 in `gif_converter.rb` and re-export                      |
+| `mini_magick` gem not found                 | Run `gem install mini_magick` and ensure ImageMagick is installed         |
+| Fastlane lane not found                     | Run `bundle exec fastlane lanes` to list available lanes                  |
+| CocoaPods install fails                     | Run `sudo gem install cocoapods` then `pod repo update`                   |
+| SDWebImage GIF not animating in SwiftUI     | Use `SDWebImageSwiftUI` pod and `WebImage` component, not `AsyncImage`    |

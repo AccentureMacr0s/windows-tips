@@ -1,0 +1,54 @@
+name: Text prompt to GIF (download artifact)
+
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: What should the GIF depict?
+        required: true
+        type: string
+        default: "A shining n-bit sunflower on a kitchen table, with a chef-client, knife, npm test, Node.js and Linux commands flowing like the Matrix"
+  pull_request:
+    paths:
+      - .github/workflows/generate-requested-gif.yml
+      - instagram-gif-guide/generate_request_gif.rb
+      - instagram-gif-guide/test_generate_request_gif.rb
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GIF_REQUEST: ${{ inputs.prompt || 'A shining n-bit sunflower on a kitchen table, with a chef-client, knife, npm test, Node.js and Linux commands flowing like the Matrix' }}
+      OLLAMA_MODEL: qwen2.5:0.5b
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install rendering tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes ffmpeg librsvg2-bin
+      - name: Start Ollama and download the small model
+        run: |
+          docker run --detach --publish 11434:11434 --name ollama ollama/ollama:0.6.2
+          for attempt in $(seq 1 30); do
+            if curl --silent --fail http://127.0.0.1:11434/api/tags >/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          curl --fail http://127.0.0.1:11434/api/tags >/dev/null
+          docker exec ollama ollama pull "$OLLAMA_MODEL"
+      - name: Run generator tests
+        run: ruby instagram-gif-guide/test_generate_request_gif.rb
+      - name: Generate the requested GIF
+        run: ruby instagram-gif-guide/generate_request_gif.rb dist/requested.gif
+      - name: Publish GIF as a downloadable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: requested-gif
+          path: dist/requested.gif
+          if-no-files-found: error
+          retention-days: 7
