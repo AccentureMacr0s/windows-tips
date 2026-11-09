@@ -38,7 +38,7 @@ class GenerateRequestGifTest < Minitest::Test
     assert_includes workflow, 'name: Text prompt to GIF (download artifact)'
     assert_includes workflow, 'prompt:'
     assert_includes workflow, 'required: true'
-    assert_includes workflow, 'default: "A shining n-bit sunflower'
+    assert_includes workflow, 'default: "An AK-47 shooting at balloons'
     refute_includes workflow, 'video_path'
   end
 end
