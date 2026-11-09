@@ -11,6 +11,7 @@ module RequestGif
   FPS = 12
   FRAME_COUNT = 24
   MAX_REQUEST_LENGTH = 2_000
+  DEFAULT_MODEL = 'qwen2.5:0.5b'
   COMMANDS = [
     'chef-client converge',
     'npm test',
@@ -141,7 +142,7 @@ if $PROGRAM_NAME == __FILE__
   end
   output = ARGV.fetch(0, 'dist/requested.gif')
   endpoint = ENV.fetch('OLLAMA_URL', 'http://127.0.0.1:11434')
-  model = ENV.fetch('OLLAMA_MODEL', 'qwen2.5:0.5b')
+  model = ENV.fetch('OLLAMA_MODEL', RequestGif::DEFAULT_MODEL)
 
   begin
     puts "Created #{RequestGif.generate(request: request, output: output, endpoint: endpoint, model: model)}"

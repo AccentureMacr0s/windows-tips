@@ -27,6 +27,14 @@ ruby instagram-gif-guide/test_generate_request_gif.rb
 
 ---
 
+## Automated GIPHY upload pipeline
+
+The separate [`GIPHY Upload Pipeline`](../.github/workflows/giphy-pipeline.yml) converts a video from the repository, builds GIPHY tags, and uploads the result. Run it manually from **Actions**, or push a video under `videos/` to `main` or `master`. Add `GIPHY_API_KEY` under **Settings → Secrets and variables → Actions** before running it.
+
+The manual inputs are `video_path` (default `videos/input.mp4`), `gif_tags` (default `gif,animation,ios`), `gif_fps` (12), `gif_width` (480), and optional `gif_title`. The pipeline runs `register → create-gif → tag-gif → upload`; its intermediate GIF artifact is retained for one day. This GIPHY upload flow is independent from the prompt-driven GIF artifact workflow above.
+
+---
+
 ## Overview
 
 [Giphy](https://giphy.com) is the most widely used GIF platform and is natively integrated into Instagram Stories, DMs, and Reels stickers. By uploading your own GIF to Giphy as a **verified artist or brand**, it becomes searchable directly inside Instagram.

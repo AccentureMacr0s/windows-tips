@@ -24,4 +24,11 @@ class GenerateRequestGifTest < Minitest::Test
     assert_includes first, 'fill="#d9e3df"'
     refute_equal first, later
   end
+
+  def test_default_model_matches_the_workflow_model
+    workflow = File.read(File.expand_path('../.github/workflows/generate-requested-gif.yml', __dir__))
+
+    assert_equal 'qwen2.5:0.5b', RequestGif::DEFAULT_MODEL
+    assert_includes workflow, "OLLAMA_MODEL: #{RequestGif::DEFAULT_MODEL}"
+  end
 end
