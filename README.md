@@ -56,11 +56,17 @@ windows-tips/
 
 ---
 
-## Instagram GIF Pipeline
+## GIF Generation and Upload Workflows
 
-The `instagram-gif-guide/` directory and `scripts/` folder contain a fully
-automated pipeline for creating iOS-optimised GIFs from video files and
-uploading them to GIPHY for use in Instagram Stories and DMs.
+The default CI generation path is **Text prompt to GIF (download artifact)**.
+Enter a prompt in the Actions tab, or let pull-request CI render its sample
+prompt. It needs no video input or iPhone upload: the resulting GIF is
+downloadable from the run's artifact and is not committed to the repository.
+
+The separate **GIPHY Upload Pipeline** is optional and requires a video already
+in the repository. GitHub Actions does not take a video directly from an
+iPhone as a workflow input; use the text-prompt workflow when you do not have a
+repository video.
 
 ### Pipeline Files
 
@@ -72,18 +78,15 @@ uploading them to GIPHY for use in Instagram Stories and DMs.
 | [`scripts/add_tags.py`](scripts/add_tags.py) | Build GIPHY tag list; auto-expand Cyrillic with Latin transliteration |
 | [`scripts/upload_to_giphy.rb`](scripts/upload_to_giphy.rb) | Upload GIF to GIPHY via Upload API |
 | [`.github/workflows/giphy-pipeline.yml`](.github/workflows/giphy-pipeline.yml) | Four-job GitHub Actions pipeline |
-| [`.github/workflows/generate-requested-gif.yml`](.github/workflows/generate-requested-gif.yml) | Turn a prompt into a downloadable GIF artifact |
+| [`.github/workflows/generate-requested-gif.yml`](.github/workflows/generate-requested-gif.yml) | Default: turn a prompt into a downloadable GIF artifact |
 
 ### Quick Start
 
-1. Add your GIPHY API key as a GitHub Actions secret named `GIPHY_API_KEY`.
-2. Push a video file under `videos/`, or trigger the workflow manually from the
-   **Actions** tab.
-3. The pipeline runs four jobs automatically:
-   ```
-   register → create-gif → tag-gif → upload
-   ```
-4. The uploaded GIF URL is printed at the end of the `upload` job.
+**Text prompt to GIF (no video):** Open **Actions → Text prompt to GIF (download artifact) → Run workflow**, enter a prompt, then download `requested-gif` from the run's artifacts.
+
+**Optional video-to-GIPHY upload:** Add a video under `videos/` or provide its repository path as `video_path`, and add `GIPHY_API_KEY` as an Actions secret.
+
+For that optional upload, the pipeline runs `register → create-gif → tag-gif → upload`; the uploaded GIF URL is printed at the end of the `upload` job.
 
 See [`instagram-gif-guide/README.md`](instagram-gif-guide/README.md) for
 detailed documentation, security guidelines, and troubleshooting.

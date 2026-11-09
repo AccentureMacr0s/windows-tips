@@ -31,4 +31,14 @@ class GenerateRequestGifTest < Minitest::Test
     assert_equal 'qwen2.5:0.5b', RequestGif::DEFAULT_MODEL
     assert_includes workflow, "OLLAMA_MODEL: #{RequestGif::DEFAULT_MODEL}"
   end
+
+  def test_ci_default_is_text_to_gif_without_video_input
+    workflow = File.read(File.expand_path('../.github/workflows/generate-requested-gif.yml', __dir__))
+
+    assert_includes workflow, 'name: Text prompt to GIF (download artifact)'
+    assert_includes workflow, 'prompt:'
+    assert_includes workflow, 'required: true'
+    assert_includes workflow, 'default: "A shining n-bit sunflower'
+    refute_includes workflow, 'video_path'
+  end
 end

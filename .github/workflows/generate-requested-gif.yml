@@ -1,4 +1,4 @@
-name: Generate requested GIF
+name: Text prompt to GIF (download artifact)
 
 on:
   workflow_dispatch:

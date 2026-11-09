@@ -4,15 +4,15 @@ This guide walks you through creating a custom GIF with AI tools and uploading i
 
 ---
 
-## Generate a GIF from a CI request
+## Default CI workflow: text prompt to GIF
 
-The repository's **Generate requested GIF** GitHub Actions workflow accepts a prompt through `workflow_dispatch`, or runs a sample request as a pull-request smoke test. For example:
+The default GIF-generation path is **Text prompt to GIF (download artifact)**. It accepts a text prompt through `workflow_dispatch`, or creates the sample GIF in pull-request CI when the workflow or generator changes. No video file or iPhone upload is required. For example:
 
 > A shining n-bit sunflower on a kitchen table, with a chef-client, knife, npm test, Node.js and Linux commands flowing like the Matrix.
 
-To run it, open **Actions → Generate requested GIF → Run workflow**, select a branch, enter the request, and start the run. When it completes, download the `requested-gif` artifact from the run's **Artifacts** section; it expires after seven days and is never added to Git.
+To run it, open **Actions → Text prompt to GIF (download artifact) → Run workflow**, select a branch, enter the request (or keep the default), and start the run. Ollama turns the prompt into a short caption; Ruby and FFmpeg render that as an animated vector GIF. The GIF is the output, not an input video. Download the `requested-gif` artifact from the completed run's **Artifacts** section; it expires after seven days and is never added to Git. This creates a lightweight illustration, not photorealistic AI video.
 
-The workflow starts a local Ollama server with the small `qwen2.5:0.5b` model. Ollama interprets the request into a caption; the Ruby renderer creates a lightweight animated vector illustration, and FFmpeg encodes it as a looping GIF. This is a simple illustrated result, not a photorealistic image/video-generation model. Requests are limited to 2,000 characters. For local use, install Ruby, Ollama, `librsvg2-bin`, and FFmpeg, start Ollama, then run:
+The workflow starts a local Ollama server with the small `qwen2.5:0.5b` model. Requests are limited to 2,000 characters. For local use, install Ruby, Ollama, `librsvg2-bin`, and FFmpeg, start Ollama, then run:
 
 ```bash
 GIF_REQUEST="A shining sunflower beside a stream of npm test commands" \
@@ -29,9 +29,9 @@ ruby instagram-gif-guide/test_generate_request_gif.rb
 
 ## Automated GIPHY upload pipeline
 
-The separate [`GIPHY Upload Pipeline`](../.github/workflows/giphy-pipeline.yml) converts a video from the repository, builds GIPHY tags, and uploads the result. Run it manually from **Actions**, or push a video under `videos/` to `main` or `master`. Add `GIPHY_API_KEY` under **Settings → Secrets and variables → Actions** before running it.
+The optional [`GIPHY Upload Pipeline`](../.github/workflows/giphy-pipeline.yml) is a separate video-to-GIPHY flow. It requires a video already available in the repository (or pushed under `videos/`); GitHub Actions does not accept a video directly from an iPhone as a workflow input. This pipeline builds GIPHY tags and uploads the converted result. Run it manually from **Actions**, or push a video under `videos/` to `main` or `master`. Add `GIPHY_API_KEY` under **Settings → Secrets and variables → Actions** before running it.
 
-The manual inputs are `video_path` (default `videos/input.mp4`), `gif_tags` (default `gif,animation,ios`), `gif_fps` (12), `gif_width` (480), and optional `gif_title`. The pipeline runs `register → create-gif → tag-gif → upload`; its intermediate GIF artifact is retained for one day. This GIPHY upload flow is independent from the prompt-driven GIF artifact workflow above.
+The manual inputs are `video_path` (default `videos/input.mp4`), `gif_tags` (default `gif,animation,ios`), `gif_fps` (12), `gif_width` (480), and optional `gif_title`. The pipeline runs `register → create-gif → tag-gif → upload`; its intermediate GIF artifact is retained for one day. Use the text-prompt workflow above when no source video is available.
 
 ---
 
